@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titre %}{{ txt.species }}{% endblock %}
+{% block contenu %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🥚 {{ txt.species }}</h2>
+    <a href="{% url 'espece_creer' %}" class="btn btn-success">➕ {{ txt.add }}</a>
+</div>
+
+<div class="table-responsive shadow-sm rounded">
+    <table class="table table-hover align-middle bg-white mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>{{ txt.species }}</th>
+                <th>{{ txt.price }}</th>
+                <th>{{ txt.incubation }}</th>
+                <th>{{ txt.actions }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in especes %}
+            <tr {% if not e.actif %}class="table-secondary text-muted"{% endif %}>
+                <td><strong>{{ e.nom }}</strong></td>
+                <td>{{ e.prix_unitaire }} FCFA</td>
+                <td>{{ e.duree_incubation_jours }} jours</td>
+                <td>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'espece_modifier' e.pk %}" class="btn btn-sm btn-outline-primary">{{ txt.edit }}</a>
+                        <form action="{% url 'espece_supprimer' e.pk %}" method="post" onsubmit="return confirm('{{ txt.confirm_delete }}')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">{{ txt.delete }}</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center py-4 text-muted">{{ txt.no_data }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

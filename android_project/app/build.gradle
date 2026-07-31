@@ -1,0 +1,70 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "com.chaquo.python"
+}
+
+android {
+    namespace "com.kissima.couveuse"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.kissima.couveuse"
+        minSdk 26
+        targetSdk 35
+        versionCode 3
+        versionName "1.0.0"
+
+        ndk {
+            // Couvre la grande majorité des téléphones Android actuels (64-bit).
+            abiFilters "arm64-v8a", "x86_64"
+        }
+
+        python {
+            version "3.12"
+            // Dépendances Python installées DANS l'APK au moment du build
+            // (équivalent mobile de requirements.txt — psycopg2 est volontairement
+            // omis car la version mobile utilise SQLite, voir settings_mobile.py).
+            pip {
+                install "django==5.0.6"
+                install "pillow"
+                install "python-dotenv"
+                install "tzdata"
+                install "reportlab"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:1.15.0"
+    implementation "androidx.appcompat:appcompat:1.7.1"
+    implementation "androidx.work:work-runtime-ktx:2.11.2"
+    implementation "androidx.webkit:webkit:1.16.0"
+}

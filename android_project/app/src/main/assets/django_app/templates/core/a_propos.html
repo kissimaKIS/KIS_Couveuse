@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ txt.about }}{% endblock %}
+
+{% block contenu %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+            <div class="bg-success py-5 text-center text-white">
+                <h2 class="text-white mb-2 fs-1">KIS <span class="fw-light">Couveuse</span></h2>
+                <p class="small opacity-75 text-uppercase tracking-widest mb-0">Version 1.0.0</p>
+            </div>
+            <div class="card-body p-4 p-md-5">
+
+                <!-- Info App -->
+                <div class="text-center mb-5">
+                    <div class="species-circle mx-auto mb-3 shadow-none" style="width: 80px; height: 80px; border-width: 3px;">
+                        <i class="bi bi-info-circle fs-1 text-success"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">{{ txt.app_info }}</h5>
+                    <p class="text-muted leading-relaxed px-lg-5">
+                        {{ txt.app_desc }}
+                    </p>
+                </div>
+
+                <!-- Info Licence -->
+                <div class="bg-light rounded-4 p-4 mb-5 border">
+                    <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-shield-check me-2"></i>{{ txt.license_info }}</h6>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="small text-muted">{{ txt.license_type }}</div>
+                            <div class="fw-bold">{{ licence.type }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted">{{ txt.days_remaining }}</div>
+                            <div class="fw-bold text-success">{{ licence.jours }} jours</div>
+                        </div>
+                        {% if licence.expire %}
+                        <div class="col-12 border-top pt-2">
+                            <div class="small text-muted">{{ txt.expiry_date }}</div>
+                            <div class="fw-bold">{{ licence.expire }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-5 opacity-10">
+
+                <!-- Développeur -->
+                <div class="text-center">
+                    <p class="text-muted small text-uppercase fw-bold tracking-wider mb-4">{{ txt.developer }}</p>
+
+                    <div class="h3 fw-bold text-dark mb-1">Madikandé Traoré</div>
+                    <p class="text-muted mb-5">{{ txt.dev_role }}</p>
+
+                    <div class="row g-3 justify-content-center">
+                        <div class="col-sm-6">
+                            <a href="tel:+22376413630" class="btn btn-outline-dark w-100 rounded-pill py-3 fw-bold border-2">
+                                <i class="bi bi-telephone-fill me-2"></i> +223 76 41 36 30
+                            </a>
+                        </div>
+                        <div class="col-sm-6">
+                            <a href="https://wa.me/22369801321?text=Bonjour%20Madikandé%2C%20j%27ai%20besoin%20d%27aide%20pour%20KIS%20Couveuse." class="btn btn-success w-100 rounded-pill py-3 fw-bold shadow-sm">
+                                <i class="bi bi-whatsapp me-2"></i> +223 69 80 13 21
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 pt-5 text-center border-top">
+                    <p class="x-small text-muted text-uppercase fw-bold opacity-50 mb-0">
+                        &copy; 2026 KIS SOLUTION
+                    </p>
+                    <p class="x-small text-muted opacity-50">{{ txt.all_rights }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .leading-relaxed { line-height: 1.6; }
+    .border-2 { border-width: 2px !important; }
+</style>
+{% endblock %}

@@ -1,0 +1,6 @@
+Django>=5.0,<6.0
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+pillow>=10.0
+pystray>=0.19
+pyinstaller>=6.0

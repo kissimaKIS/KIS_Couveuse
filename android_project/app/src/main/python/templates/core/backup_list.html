@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block titre %}{{ txt.backups }}{% endblock %}
+{% block contenu %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>💾 {{ txt.backups }}</h2>
+    <a href="{% url 'exporter_cloud' %}" class="btn btn-sm btn-success shadow-sm">
+        <i class="bi bi-cloud-upload"></i> {{ txt.cloud_export }}
+    </a>
+</div>
+
+<div class="alert alert-info small shadow-sm mb-4">
+    <i class="bi bi-info-circle me-2"></i>
+    {{ txt.restore_warning }}
+</div>
+
+<div class="card shadow-sm border-0 mb-4 bg-light">
+    <div class="card-body">
+        <h5 class="fw-bold mb-2"><i class="bi bi-cloud-download me-2"></i>{{ txt.cloud_restore }}</h5>
+        <p class="x-small text-muted mb-3">{{ txt.pick_file }} (.sqlite3)</p>
+        <form action="{% url 'importer_cloud' %}" method="post" enctype="multipart/form-data" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="file" name="fichier_db" class="form-control form-control-sm" accept=".sqlite3" required>
+            <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('{{ txt.confirm_restore }}')">{{ txt.import }}</button>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive shadow-sm rounded">
+    <table class="table table-hover align-middle bg-white mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>{{ txt.date }}</th>
+                <th>{{ txt.size }}</th>
+                <th class="text-end">{{ txt.actions }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sauvegardes %}
+            <tr>
+                <td><strong>{{ s.date }}</strong></td>
+                <td class="text-muted">{{ s.taille }} ko</td>
+                <td class="text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'restaurer_sauvegarde' s.nom %}"
+                           class="btn btn-sm btn-warning"
+                           onclick="return confirm('{{ txt.confirm_restore }}')">
+                            {{ txt.edit }}
+                        </a>
+                        <form action="{% url 'supprimer_sauvegarde' s.nom %}" method="post" class="d-inline" onsubmit="return confirm('{{ txt.confirm_delete }}')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">{{ txt.delete }}</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center py-5 text-muted">{{ txt.no_data }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

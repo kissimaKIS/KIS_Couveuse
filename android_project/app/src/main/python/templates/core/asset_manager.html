@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block titre %}{{ txt.appearance }}{% endblock %}
+{% block contenu %}
+<h2 class="mb-4">{{ txt.appearance }}</h2>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ txt.appearance_settings }}</h5>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ txt.establishment_name }}</label>
+                        {{ form_parametres.nom_etablissement }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Logo</label>
+                        {{ form_parametres.logo }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fond d'écran</label>
+                        {{ form_parametres.fond_ecran }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ txt.days_before_mirage }}</label>
+                        {{ form_parametres.jours_avant_mirage }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ txt.alert_threshold }}</label>
+                        {{ form_parametres.seuil_alerte_jours }}
+                    </div>
+                    <button type="submit" name="enregistrer_parametres" class="btn btn-success">{{ txt.save }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ txt.images_lib }}</h5>
+                <form method="post" enctype="multipart/form-data" class="mb-3">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ txt.title }}</label>
+                        {{ form_media.titre }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ txt.file }}</label>
+                        {{ form_media.fichier }}
+                    </div>
+                    <button type="submit" name="ajouter_media" class="btn btn-primary">{{ txt.add_image }}</button>
+                </form>
+                <div class="row g-2">
+                    {% for img in images %}
+                    <div class="col-4">
+                        <div class="card">
+                            <img src="{{ img.fichier.url }}" class="card-img-top" style="height:80px;object-fit:cover;">
+                            <div class="card-body p-2">
+                                <p class="small mb-1">{{ img.titre }}</p>
+                                <form method="post" action="{% url 'media_supprimer' img.pk %}" onsubmit="return confirm('{{ txt.confirm_delete }}');">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger w-100">{{ txt.delete }}</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">{{ txt.no_images }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

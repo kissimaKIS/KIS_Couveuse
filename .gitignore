@@ -1,0 +1,34 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.env
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# Build and Distribution
+build/
+dist/
+*.spec
+
+# Android
+.gradle/
+android_project/app/build/
+android_project/local.properties
+*.apk
+*.aar
+
+# IDEs
+.idea/
+.vscode/
+
+# Internal artifacts
+.artifacts/
+dernieres.html
+sauvegarde_avant_restauration/
+
+# OS
+.DS_Store
+Thumbs.db

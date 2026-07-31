@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block titre %}{{ txt.home }}{% endblock %}
+{% block contenu %}
+<h2 class="mb-3">{{ txt.situation_at }} {{ aujourd_hui|date:"d/m/Y" }}</h2>
+
+<!-- Sélection rapide d'espèce -->
+<div class="mb-4">
+    <label class="form-label text-muted small text-uppercase fw-bold">{{ txt.new_plan }} :</label>
+    <div class="d-flex overflow-x-auto pb-2 gap-3 no-scrollbar" style="-webkit-overflow-scrolling: touch;">
+        {% for e in especes %}
+        <a href="{% url 'depot_creer' %}?espece={{ e.pk }}" class="text-decoration-none text-center" style="min-width: 60px;">
+            <div class="species-circle mx-auto">
+                {% if e.icone %}
+                <img src="{{ e.icone.url }}" alt="{{ e.nom }}">
+                {% else %}
+                <i class="bi bi-egg-fill fs-3 text-success"></i>
+                {% endif %}
+            </div>
+            <span class="species-label text-dark fw-bold">{{ e.nom }}</span>
+        </a>
+        {% empty %}
+        <p class="small text-muted">{{ txt.no_data }}.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="row g-2 mb-4 card-stats">
+    <div class="col-4">
+        <a href="{% url 'depot_liste' %}?filter=actifs" class="text-decoration-none">
+            <div class="card text-bg-success shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-title x-small mb-1">{{ txt.deposits }}</h6>
+                    <p class="h4 mb-0 fw-bold">{{ total_depots_actifs }}</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-4">
+        <a href="{% url 'depot_liste' %}?filter=mirage" class="text-decoration-none">
+            <div class="card text-bg-warning shadow-sm h-100 border-0">
+                <div class="card-body text-center text-dark">
+                    <h6 class="card-title x-small mb-1">{{ txt.mirages }}</h6>
+                    <p class="h4 mb-0 fw-bold">{{ alertes_mirage_count }}</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-4">
+        <a href="{% url 'depot_liste' %}?filter=eclosion" class="text-decoration-none">
+            <div class="card text-bg-danger shadow-sm h-100 border-0">
+                <div class="card-body text-center">
+                    <h6 class="card-title x-small mb-1">{{ txt.hatchings }}</h6>
+                    <p class="h4 mb-0 fw-bold">{{ alertes_eclosion_count }}</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="d-grid gap-2">
+    <a href="{% url 'depot_creer' %}" class="btn btn-success shadow-sm py-2">
+        <i class="bi bi-plus-lg"></i> {{ txt.free_deposit }}
+    </a>
+</div>
+
+<style>
+    .x-small { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+{% endblock %}

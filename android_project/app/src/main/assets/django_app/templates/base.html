@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="{{ current_lang }}" dir="{% if is_rtl %}rtl{% else %}ltr{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block titre %}{{ parametres_globaux.nom_etablissement|default:"KIS Couveuse Apps" }}{% endblock %}</title>
+    <link rel="manifest" href="{% static 'pwa/manifest.json' %}">
+    <meta name="theme-color" content="#0f172a">
+    <!-- Bootstrap & Icons (Offline) -->
+    <link href="{% static 'vendor/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/css/bootstrap-icons.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+
+    <!-- Tailwind CSS & Modern Styles (Offline support) -->
+    <link href="{% static 'css/modern.css' %}" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+    {% if parametres_globaux.fond_ecran %}
+    <style>
+        body { background-image: url('{{ parametres_globaux.fond_ecran.url }}'); background-size: cover; background-attachment: fixed; }
+    </style>
+    {% endif %}
+</head>
+<body class="pb-5">
+
+{% if user.is_authenticated %}
+<!-- Top Bar -->
+<nav class="navbar navbar-dark sticky-top shadow-sm py-1">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <a class="navbar-brand d-flex align-items-center gap-2 py-0" href="{% url 'dashboard' %}" style="max-width: 75%;">
+            {% if parametres_globaux.logo %}
+                <img src="{{ parametres_globaux.logo.url }}" alt="logo" style="max-width: 120px; height: 28px; object-fit: contain;">
+            {% endif %}
+            <div class="d-flex flex-column">
+                <span class="fw-bold text-uppercase" style="font-size: 0.75rem; line-height: 1;">KIS Couveuse Apps</span>
+                <small style="font-size: 0.55rem; opacity: 0.8;" class="text-truncate">{{ parametres_globaux.nom_etablissement }}</small>
+            </div>
+        </a>
+
+        <div class="dropdown">
+            <button class="btn btn-success btn-sm dropdown-toggle border-0" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle"></i> <span class="d-none d-sm-inline ms-1">{{ user.username }}</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                <li><a class="dropdown-item py-2" href="{% url 'gestion_medias' %}"><i class="bi bi-palette me-2"></i> {{ txt.appearance }}</a></li>
+                <li><a class="dropdown-item py-2" href="{% url 'liste_sauvegardes' %}"><i class="bi bi-database-check me-2"></i> {{ txt.backups }}</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li class="px-3 py-1"><small class="text-muted text-uppercase fw-bold">{{ txt.lang }}</small></li>
+                <li><a class="dropdown-item py-1" href="{% url 'changer_langue' %}?langue=fr">🇫🇷 Français</a></li>
+                <li><a class="dropdown-item py-1" href="{% url 'changer_langue' %}?langue=en">🇺🇸 English</a></li>
+                <li><a class="dropdown-item py-1" href="{% url 'changer_langue' %}?langue=ar">🇸🇦 العربية</a></li>
+                <li><a class="dropdown-item py-1" href="{% url 'changer_langue' %}?langue=es">🇪🇸 Español</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item py-2 fw-bold text-success" href="{% url 'a_propos' %}"><i class="bi bi-info-circle me-2"></i> {{ txt.about }}</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Bottom Navigation Bar -->
+<nav class="bottom-nav border-top bg-white d-flex justify-content-around align-items-center py-2 fixed-bottom shadow-lg">
+    <a href="{% url 'dashboard' %}" class="nav-link text-center {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-house-door fs-4 d-block"></i>
+        <span class="small">{{ txt.home }}</span>
+    </a>
+    <a href="{% url 'depot_liste' %}" class="nav-link text-center {% if 'depot' in request.path %}active{% endif %}">
+        <i class="bi bi-egg-fill fs-4 d-block"></i>
+        <span class="small">{{ txt.deposits }}</span>
+    </a>
+    <a href="{% url 'client_liste' %}" class="nav-link text-center {% if 'client' in request.path %}active{% endif %}">
+        <i class="bi bi-people fs-4 d-block"></i>
+        <span class="small">{{ txt.clients }}</span>
+    </a>
+    <a href="{% url 'espece_liste' %}" class="nav-link text-center {% if 'espece' in request.path %}active{% endif %}">
+        <i class="bi bi-bird fs-4 d-block"></i>
+        <span class="small">{{ txt.species }}</span>
+    </a>
+    <a href="{% url 'statistiques' %}" class="nav-link text-center {% if 'stats' in request.path %}active{% endif %}">
+        <i class="bi bi-graph-up-arrow fs-4 d-block"></i>
+        <span class="small">{{ txt.stats }}</span>
+    </a>
+</nav>
+{% endif %}
+
+<div class="container py-3 mb-5">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+    {% block contenu %}{% endblock %}
+</div>
+
+<script src="{% static 'vendor/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

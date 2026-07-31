@@ -1,0 +1,9 @@
+{
+  "name": "Gestion Couveuse",
+  "short_name": "Couveuse",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f9f7",
+  "theme_color": "#2f6f4f",
+  "icons": []
+}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block titre %}{{ txt.print }} - {{ client.nom }}{% endblock %}
+{% block contenu %}
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+    <a href="{% url 'statistiques' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> {{ txt.cancel }}</a>
+    <button onclick="CouveuseApp.imprimerPage()" class="btn btn-primary btn-sm"><i class="bi bi-printer"></i> {{ txt.print }}</button>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 p-4 bg-white">
+    <!-- En-tête Professionnel -->
+    <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+        <div>
+            {% if parametres_globaux.logo %}
+                <img src="{{ parametres_globaux.logo.url }}" alt="Logo" style="max-height: 60px;">
+            {% endif %}
+        </div>
+        <div class="text-end">
+            <h5 class="fw-bold mb-0 text-success">KIS Couveuse Apps</h5>
+            <small class="text-muted">{{ parametres_globaux.nom_etablissement }}</small>
+        </div>
+    </div>
+
+    <div class="text-center mb-4">
+        <h2 class="text-primary mb-1 fw-bold">{{ txt.bilan_client }}</h2>
+        <h4 class="fw-bold text-dark">{{ client.nom }}</h4>
+        <p class="text-muted small mb-0"><i class="bi bi-telephone"></i> {{ client.telephone|default:"-" }}</p>
+    </div>
+
+    <div class="row g-2 mb-4 text-center">
+        <div class="col-4">
+            <div class="bg-light p-2 rounded">
+                <div class="x-small text-uppercase text-muted">{{ txt.total_eggs }}</div>
+                <div class="h5 mb-0 fw-bold">{{ total_oeufs }}</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="bg-light p-2 rounded">
+                <div class="x-small text-uppercase text-muted">{{ txt.poussins }}</div>
+                <div class="h5 mb-0 fw-bold">{{ total_eclos }}</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="bg-light p-2 rounded">
+                <div class="x-small text-uppercase text-muted">{{ txt.success_rate }}</div>
+                <div class="h5 mb-0 fw-bold text-success">{{ taux_reussite }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle" style="font-size: 0.75rem;">
+            <thead class="table-dark">
+                <tr>
+                    <th>{{ txt.date_depot }}</th>
+                    <th>{{ txt.species }}</th>
+                    <th>{{ txt.qty }}</th>
+                    <th>{{ txt.date_eclosion }}</th>
+                    <th>{{ txt.nb_eclos }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in depots %}
+                <tr>
+                    <td>{{ d.date_depot|date:"d/m/y" }}</td>
+                    <td>{{ d.espece.nom }}</td>
+                    <td>{{ d.quantite }}</td>
+                    <td>{{ d.date_prevue_eclosion|date:"d/m/y" }}</td>
+                    <td>
+                        {% if d.nombre_eclos != None %}
+                            <span class="badge bg-success">{{ d.nombre_eclos }}</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">{{ txt.ongoing }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pied de page -->
+    <div class="mt-5 pt-3 text-center border-top text-muted x-small">
+        <p class="mb-0 fw-bold">KIS Couveuse Apps</p>
+        <p>{{ txt.managed_by }} : {{ parametres_globaux.nom_etablissement }}</p>
+    </div>
+</div>
+
+{% if auto_print %}
+<script>
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (window.CouveuseApp && window.CouveuseApp.imprimerPage) {
+                CouveuseApp.imprimerPage();
+            } else {
+                window.print();
+            }
+        }, 500);
+    });
+</script>
+{% endif %}
+
+<style>
+    @media print {
+        .navbar, .bottom-nav, .d-print-none { display: none !important; }
+        body { background: white !important; padding: 0 !important; }
+        .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block titre %}{{ txt.deposits }}{% endblock %}
+{% block contenu %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">
+        {% if q_filter == 'mirage' %}{{ txt.mirages }}
+        {% elif q_filter == 'eclosion' %}{{ txt.hatchings }}
+        {% elif q_filter == 'actifs' %}{{ txt.deposits }} ({{ txt.search }})
+        {% else %}{{ txt.deposits }}
+        {% endif %}
+    </h2>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#searchCollapse">
+            <i class="bi bi-search"></i>
+        </button>
+        {% if q_filter != 'mirage' and q_filter != 'eclosion' %}
+        <a href="{% url 'depot_creer' %}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> {{ txt.new }}</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Formulaire de recherche caché par défaut -->
+<div class="collapse {% if q_client or q_espece or q_date_debut %}show{% endif %} mb-4" id="searchCollapse">
+    <form method="get" class="card card-body bg-light border-0 shadow-sm p-3">
+        <div class="row g-2">
+            <div class="col-12">
+                <input type="text" name="client" value="{{ q_client }}" class="form-control form-control-sm" placeholder="{{ txt.clients }}">
+            </div>
+            <div class="col-6">
+                <select name="espece" class="form-select form-select-sm">
+                    <option value="">{{ txt.all_species }}</option>
+                    {% for e in especes %}
+                    <option value="{{ e.pk }}" {% if q_espece == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6">
+                <select name="type_date" class="form-select form-select-sm">
+                    <option value="depot" {% if q_type_date == "depot" %}selected{% endif %}>{{ txt.date_depot }}</option>
+                    <option value="eclosion" {% if q_type_date == "eclosion" %}selected{% endif %}>{{ txt.date_eclosion }}</option>
+                </select>
+            </div>
+            <div class="col-5">
+                <input type="date" name="date_debut" value="{{ q_date_debut }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-5">
+                <input type="date" name="date_fin" value="{{ q_date_fin }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-check-lg"></i></button>
+            </div>
+        </div>
+        {% if q_filter %}<input type="hidden" name="filter" value="{{ q_filter }}">{% endif %}
+    </form>
+</div>
+
+<div class="table-responsive shadow-sm rounded-3 overflow-hidden">
+<table class="table table-hover align-middle mb-0">
+    <thead class="table-light">
+        <tr>
+            <th class="ps-3">{{ txt.date }}</th><th>{{ txt.clients }}</th><th>{{ txt.species }}</th><th>{{ txt.qty }}</th>
+            <th>{{ txt.remaining }}</th><th class="text-end pe-3">{{ txt.actions }}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for d in depots %}
+        <tr class="{% if d.alerte_eclosion_proche %}table-danger-light{% elif d.alerte_mirage_du_jour %}table-warning-light{% endif %}">
+            <td class="ps-3"><small>{{ d.date_depot|date:"d/m" }}</small></td>
+            <td><strong>{{ d.client }}</strong></td>
+            <td><small>{{ d.espece }}</small></td>
+            <td><span class="badge bg-secondary-subtle text-dark">{{ d.quantite }}</span></td>
+            <td><strong>{{ d.reste_a_payer }}</strong></td>
+            <td class="text-end pe-3">
+                <div class="d-flex justify-content-end gap-2">
+                    {% if d.client.telephone %}
+                    <a href="{% url 'whatsapp_alerte_depot' d.pk %}" class="btn btn-sm btn-link p-0 text-success fs-5"><i class="bi bi-whatsapp"></i></a>
+                    {% endif %}
+                    <a href="{% url 'depot_modifier' d.pk %}" class="btn btn-sm btn-link p-0 text-primary fs-5"><i class="bi bi-pencil-square"></i></a>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center py-5 text-muted">{{ txt.no_data }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<style>
+    .table-danger-light { background-color: #fce8e8 !important; }
+    .table-warning-light { background-color: #fff9e6 !important; }
+</style>
+{% endblock %}
