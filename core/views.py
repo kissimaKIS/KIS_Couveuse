@@ -316,18 +316,21 @@ def espece_list(request):
 
 @login_required
 def espece_form(request, pk=None):
+    lang = request.session.get('django_language', 'fr')
+    strings = get_strings(lang)
     espece = get_object_or_404(Espece, pk=pk) if pk else None
+
     if request.method == "POST":
-        nom = request.POST.get("nom")
-        prix = request.POST.get("prix_unitaire")
-        duree = request.POST.get("duree_incubation_jours")
-        if espece:
-            espece.nom, espece.prix_unitaire, espece.duree_incubation_jours = nom, prix, duree
-            espece.save()
-        else:
-            Espece.objects.create(nom=nom, prix_unitaire=prix, duree_incubation_jours=duree)
-        return redirect("espece_liste")
-    return render(request, "core/espece_form.html", {"espece": espece})
+        form = EspeceForm(request.POST, request.FILES, instance=espece)
+        if form.is_valid():
+            form.save()
+            messages.success(request, strings['success_saved'] if not pk else strings['success_updated'])
+            return redirect("espece_liste")
+    else:
+        form = EspeceForm(instance=espece)
+
+    titre = strings['edit'] if pk else strings['add']
+    return render(request, "core/espece_form.html", {"form": form, "espece": espece, "titre": titre})
 
 @login_required
 @require_http_methods(["POST"])

@@ -94,6 +94,19 @@ class ClientRapideForm(forms.ModelForm):
         }
 
 
+class EspeceForm(forms.ModelForm):
+    class Meta:
+        model = Espece
+        fields = ["nom", "prix_unitaire", "duree_incubation_jours", "icone", "actif"]
+        widgets = {
+            "nom": forms.TextInput(attrs={"class": "form-control"}),
+            "prix_unitaire": forms.NumberInput(attrs={"class": "form-control"}),
+            "duree_incubation_jours": forms.NumberInput(attrs={"class": "form-control"}),
+            "icone": forms.FileInput(attrs={"class": "form-control"}),
+            "actif": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+
 class MediaUploadForm(forms.ModelForm):
     class Meta:
         model = MediaBibliotheque
