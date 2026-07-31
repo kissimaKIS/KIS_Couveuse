@@ -19,7 +19,7 @@ from django.conf import settings
 
 from .forms import (
     CreationCompteAdminForm, ActivationLicenceForm, DemandeActivationForm,
-    DepotForm, ClientForm, ClientRapideForm, MediaUploadForm, ParametresForm,
+    DepotForm, ClientForm, ClientRapideForm, EspeceForm, MediaUploadForm, ParametresForm,
 )
 from .models import Depot, Client, Espece, ParametresApplication, MediaBibliotheque
 from .licence_utils import check_license, save_license, get_license_info, get_display_id, get_machine_id

@@ -17,7 +17,7 @@ object AssetExtractor {
     @Synchronized
     fun extraireSiNecessaire(context: Context): String {
         val destination = File(context.filesDir, "django_app")
-        val marqueur = File(destination, ".extrait_ok_v45") // Version 45: Fixed Espece (Species) form logic
+        val marqueur = File(destination, ".extrait_ok_v46") // Version 46: Import fix for EspeceForm
 
         try {
             if (!marqueur.exists()) {
