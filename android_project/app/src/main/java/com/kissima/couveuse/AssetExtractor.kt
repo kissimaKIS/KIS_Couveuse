@@ -14,7 +14,7 @@ object AssetExtractor {
     @Synchronized
     fun extraireSiNecessaire(context: Context): String {
         val destination = File(context.filesDir, "django_app")
-        val marqueur = File(destination, ".extrait_ok_v50") // Version 50: Official 1.0.1 - Payments and Reports
+        val marqueur = File(destination, ".extrait_ok_v51") // Version 50: Official 1.0.1 - Payments and Reports
 
         try {
             if (!marqueur.exists()) {
