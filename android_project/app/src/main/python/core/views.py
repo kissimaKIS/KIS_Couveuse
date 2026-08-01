@@ -543,10 +543,11 @@ def rapport_global(request):
     depots_payants = depots.filter(client__est_interne=False)
     total_revenue = depots_payants.aggregate(s=Sum('paiement_solde'))['s'] or 0
     total_ca = sum(d.montant_total - d.remise for d in depots_payants)
+    total_restant = total_ca - total_revenue
 
     context = {
         "depots": depots, "total_oeufs": total_oeufs, "total_eclos": total_eclos, "taux": taux,
-        "total_revenue": total_revenue, "total_ca": total_ca,
+        "total_revenue": total_revenue, "total_ca": total_ca, "total_restant": total_restant,
         "clients": Client.objects.all(), "especes": Espece.objects.filter(actif=True),
         "auto_print": request.GET.get('print') == '1'
     }

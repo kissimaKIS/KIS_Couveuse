@@ -54,9 +54,9 @@ class DepotForm(forms.ModelForm):
             "acompte", "remise", "notes",
         ]
         widgets = {
-            "date_depot": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
-            "date_mirage_effectue": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
-            "date_eclosion_effectuee": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "date_depot": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date", "class": "form-control"}),
+            "date_mirage_effectue": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date", "class": "form-control"}),
+            "date_eclosion_effectuee": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date", "class": "form-control"}),
             "client": forms.Select(attrs={"class": "form-select"}),
             "espece": forms.Select(attrs={"class": "form-select"}),
             "quantite": forms.NumberInput(attrs={"class": "form-control"}),
