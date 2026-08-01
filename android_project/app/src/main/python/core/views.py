@@ -130,21 +130,52 @@ def depot_liste(request):
     lang = request.session.get('django_language', 'fr')
     strings = get_strings(lang)
     depots = Depot.objects.select_related("client", "espece").all()
-    q_client = request.GET.get("client", "")
-    if q_client: depots = depots.filter(client__nom__icontains=q_client)
 
-    filter_type = request.GET.get("filter")
-    if filter_type == "actifs":
-        depots = depots.filter(nombre_eclos__isnull=True)
-    elif filter_type == "mirage":
+    # Récupération des paramètres de recherche
+    q_client = request.GET.get("client", "")
+    q_espece = request.GET.get("espece", "")
+    q_type_date = request.GET.get("type_date", "depot")
+    q_date_debut = request.GET.get("date_debut", "")
+    q_date_fin = request.GET.get("date_fin", "")
+    q_filter = request.GET.get("filter", "")
+
+    if q_client:
+        depots = depots.filter(client__nom__icontains=q_client)
+    if q_espece:
+        depots = depots.filter(espece_id=q_espece)
+
+    if q_date_debut:
+        if q_type_date == "depot":
+            depots = depots.filter(date_depot__gte=q_date_debut)
+        else:
+            depots = [d for d in depots if d.date_prevue_eclosion.strftime('%Y-%m-%d') >= q_date_debut]
+
+    if q_date_fin:
+        if q_type_date == "depot":
+            depots = depots.filter(date_depot__lte=q_date_fin)
+        else:
+            depots = [d for d in depots if d.date_prevue_eclosion.strftime('%Y-%m-%d') <= q_date_fin]
+
+    if q_filter == "actifs":
+        depots = [d for d in depots if d.nombre_eclos is None]
+    elif q_filter == "mirage":
         depots = [d for d in depots if d.alerte_mirage_du_jour]
-    elif filter_type == "eclosion":
+    elif q_filter == "eclosion":
         depots = [d for d in depots if d.alerte_eclosion_proche]
 
     for d in depots:
         d.espece.nom_traduit = strings.get(f"sp_{d.espece.nom}", d.espece.nom)
 
-    return render(request, "core/depot_list.html", {"depots": depots, "especes": Espece.objects.filter(actif=True)})
+    return render(request, "core/depot_list.html", {
+        "depots": depots,
+        "especes": Espece.objects.filter(actif=True),
+        "q_client": q_client,
+        "q_espece": q_espece,
+        "q_type_date": q_type_date,
+        "q_date_debut": q_date_debut,
+        "q_date_fin": q_date_fin,
+        "q_filter": q_filter,
+    })
 
 @login_required
 def depot_creer(request):
