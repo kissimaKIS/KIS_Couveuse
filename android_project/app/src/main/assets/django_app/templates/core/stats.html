@@ -5,8 +5,8 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>📈 {{ txt.stats }}</h2>
     <div class="d-flex gap-2">
-        <a href="{% url 'export_stats_global_pdf' %}" class="btn btn-sm btn-danger shadow-sm">
-            <i class="bi bi-file-pdf"></i> PDF Global
+        <a href="{% url 'rapport_global' %}" class="btn btn-sm btn-dark shadow-sm">
+            <i class="bi bi-file-earmark-bar-graph"></i> Rapport Global
         </a>
     </div>
 </div>
@@ -25,7 +25,7 @@
             <div class="card-body py-3">
                 <div class="text-muted small mb-1">{{ txt.total_revenue }}</div>
                 <div class="h4 mb-0 fw-bold text-success">{{ total_gains }}</div>
-                <div class="x-small text-muted">{{ txt.payments_sum }}</div>
+                <div class="x-small text-muted">Hors internes</div>
             </div>
         </div>
     </div>
@@ -34,16 +34,7 @@
             <div class="card-body py-3">
                 <div class="text-muted small mb-1">Chiffre d'Affaires</div>
                 <div class="h4 mb-0 fw-bold">{{ chiffre_affaire }}</div>
-                <div class="x-small text-muted">{{ txt.after_discounts }}</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card shadow-sm border-start border-4 border-info h-100">
-            <div class="card-body py-3">
-                <div class="text-muted small mb-1">Fertiles (RAM)</div>
-                <div class="h3 mb-0 fw-bold">{{ total_ram }}</div>
-                <div class="x-small text-muted">Sur couvées finies</div>
+                <div class="x-small text-muted">Hors internes</div>
             </div>
         </div>
     </div>
@@ -51,7 +42,7 @@
         <div class="card shadow-sm border-start border-4 border-warning h-100">
             <div class="card-body py-3">
                 <div class="text-muted small mb-1">{{ txt.poussins }}</div>
-                <div class="h3 mb-0 fw-bold">{{ total_eclos }}</div>
+                <div class="h3 mb-0 fw-bold text-warning">{{ total_eclos }}</div>
                 <div class="x-small text-muted">{{ txt.real_count }}</div>
             </div>
         </div>
@@ -61,37 +52,31 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <h5 class="card-title mb-4">{{ txt.success_rate }} technique / {{ txt.species }}</h5>
-        <div class="small text-muted mb-2">(Basé sur le RAM)</div>
         <div id="chartEspeces" style="min-height: 250px;"></div>
     </div>
 </div>
 
 <div class="card shadow-sm">
     <div class="card-body p-0">
-        <h5 class="card-title p-3 m-0">🏆 {{ txt.best_clients }}</h5>
+        <h5 class="card-title p-3 m-0">🏆 TOP 5 Clients (Gains)</h5>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3">Client</th>
-                        <th class="text-center">Dépôts</th>
-                        <th class="text-end pe-3" style="width: 140px;">Actions</th>
+                        <th class="text-center">Généré</th>
+                        <th class="text-end pe-3" style="width: 100px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in classement_clients %}
                     <tr>
                         <td class="ps-3"><strong>{{ c.nom }}</strong></td>
-                        <td class="text-center"><span class="badge bg-secondary">{{ c.total_depose }}</span></td>
-                        <td class="pe-3">
-                            <div class="d-flex justify-content-end gap-1">
-                                <a href="{% url 'client_bilan' c.pk %}" class="btn btn-sm btn-primary shadow-sm" style="font-size: 0.7rem;">
-                                    {{ txt.bilan }}
-                                </a>
-                                <a href="{% url 'export_client_pdf' c.pk %}" class="btn btn-sm btn-outline-danger shadow-sm">
-                                    <i class="bi bi-file-pdf"></i>
-                                </a>
-                            </div>
+                        <td class="text-center"><span class="badge bg-success-subtle text-success">{{ c.gain }} FCFA</span></td>
+                        <td class="pe-3 text-end">
+                            <a href="{% url 'client_bilan' c.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -101,7 +86,7 @@
     </div>
 </div>
 
-<!-- Scripts Graphiques (Offline) -->
+<!-- Scripts Graphiques -->
 <script src="{% static 'vendor/js/apexcharts.min.js' %}"></script>
 <script>
     var options = {
@@ -109,43 +94,13 @@
             name: 'Taux de réussite %',
             data: {{ data_especes|safe }}
         }],
-        chart: {
-            type: 'bar',
-            height: 300,
-            toolbar: { show: false }
-        },
+        chart: { type: 'bar', height: 300, toolbar: { show: false } },
         colors: ['#2F6F4F'],
-        plotOptions: {
-            bar: {
-                borderRadius: 4,
-                horizontal: true,
-            }
-        },
-        dataLabels: {
-            enabled: true,
-            formatter: function (val) { return val + "%" }
-        },
-        xaxis: {
-            categories: {{ labels_especes|safe }},
-            max: 100
-        }
+        plotOptions: { bar: { borderRadius: 4, horizontal: true } },
+        dataLabels: { enabled: true, formatter: function (val) { return val + "%" } },
+        xaxis: { categories: {{ labels_especes|safe }}, max: 100 }
     };
-
     var chart = new ApexCharts(document.querySelector("#chartEspeces"), options);
     chart.render();
 </script>
-
-{% if auto_print %}
-<script>
-    window.addEventListener('load', function() {
-        setTimeout(function() {
-            if (window.CouveuseApp && window.CouveuseApp.imprimerPage) {
-                CouveuseApp.imprimerPage();
-            } else {
-                window.print();
-            }
-        }, 500);
-    });
-</script>
-{% endif %}
 {% endblock %}

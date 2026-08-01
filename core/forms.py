@@ -37,6 +37,11 @@ class DepotForm(forms.ModelForm):
         lang = kwargs.pop('lang', 'fr')
         super().__init__(*args, **kwargs)
         strings = get_strings(lang)
+
+        # Étiquettes claires pour le paiement échelonné
+        self.fields['acompte'].label = "Nouveau Versement"
+        self.fields['acompte'].help_text = "Montant à ajouter au total payé pour ce dépôt."
+
         # Traduction des noms d'espèces dans le menu déroulant
         self.fields['espece'].queryset = Espece.objects.filter(actif=True)
         self.fields['espece'].label_from_instance = lambda obj: strings.get(f"sp_{obj.nom}", obj.nom)
@@ -45,20 +50,20 @@ class DepotForm(forms.ModelForm):
         model = Depot
         fields = [
             "client", "espece", "date_depot", "quantite",
-            "resultat_mirage", "date_mirage_effectue", "nombre_eclos",
-            "acompte", "remise", "paiement_solde", "notes",
+            "resultat_mirage", "date_mirage_effectue", "nombre_eclos", "date_eclosion_effectuee",
+            "acompte", "remise", "notes",
         ]
         widgets = {
             "date_depot": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "date_mirage_effectue": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "date_eclosion_effectuee": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "client": forms.Select(attrs={"class": "form-select"}),
             "espece": forms.Select(attrs={"class": "form-select"}),
             "quantite": forms.NumberInput(attrs={"class": "form-control"}),
             "resultat_mirage": forms.NumberInput(attrs={"class": "form-control"}),
             "nombre_eclos": forms.NumberInput(attrs={"class": "form-control"}),
-            "acompte": forms.NumberInput(attrs={"class": "form-control"}),
+            "acompte": forms.NumberInput(attrs={"class": "form-control", "placeholder": "0"}),
             "remise": forms.NumberInput(attrs={"class": "form-control"}),
-            "paiement_solde": forms.NumberInput(attrs={"class": "form-control"}),
             "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
         }
 

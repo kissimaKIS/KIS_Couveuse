@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block titre %}Rapport Global d'Activité{% endblock %}
+{% block contenu %}
+<div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
+    <h2 class="mb-0"><i class="bi bi-file-earmark-bar-graph me-2"></i>Rapport Global</h2>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-primary shadow-sm"><i class="bi bi-printer"></i> {{ txt.print }}</button>
+        <a href="{% url 'statistiques' %}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card shadow-sm border-0 mb-4 d-print-none bg-light">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2">
+            <div class="col-md-3">
+                <label class="x-small fw-bold">Client</label>
+                <select name="client" class="form-select form-select-sm">
+                    <option value="">Tous</option>
+                    {% for c in clients %}
+                    <option value="{{ c.pk }}" {% if request.GET.client == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="x-small fw-bold">Espèce</label>
+                <select name="espece" class="form-select form-select-sm">
+                    <option value="">Toutes</option>
+                    {% for e in especes %}
+                    <option value="{{ e.pk }}" {% if request.GET.espece == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="x-small fw-bold">Du</label>
+                <input type="date" name="date_debut" value="{{ request.GET.date_debut }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2">
+                <label class="x-small fw-bold">Au</label>
+                <input type="date" name="date_fin" value="{{ request.GET.date_fin }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dark btn-sm w-100"><i class="bi bi-filter"></i> Filtrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Contenu du Rapport -->
+<div class="bg-white p-4 rounded-4 shadow-sm border">
+    <div class="text-center mb-5 border-bottom pb-4">
+        <h3 class="fw-bold text-success mb-1">KIS COUVEUSE APPS</h3>
+        <p class="text-muted text-uppercase small tracking-widest mb-0">{{ parametres_globaux.nom_etablissement }}</p>
+        <div class="mt-3 badge bg-secondary-subtle text-dark px-3 py-2">
+            Période :
+            {% if request.GET.date_debut %}{{ request.GET.date_debut }}{% else %}Début{% endif %}
+            à
+            {% if request.GET.date_fin %}{{ request.GET.date_fin }}{% else %}Aujourd'hui{% endif %}
+        </div>
+    </div>
+
+    <!-- Synthèse -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <div class="small text-muted text-uppercase fw-bold mb-3 border-bottom pb-1">📊 Production</div>
+                <div class="d-flex justify-content-between mb-1"><span>Œufs déposés :</span> <span class="fw-bold">{{ total_oeufs }}</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>Poussins éclos :</span> <span class="fw-bold">{{ total_eclos }}</span></div>
+                <div class="d-flex justify-content-between text-success mt-3 pt-2 border-top">
+                    <span class="fw-bold">Taux de réussite :</span> <span class="h5 mb-0 fw-bold">{{ taux }}%</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <div class="small text-muted text-uppercase fw-bold mb-3 border-bottom pb-1">💰 Finances (Commercial)</div>
+                <div class="d-flex justify-content-between mb-1"><span>C.A. Facturé :</span> <span class="fw-bold">{{ total_ca }} FCFA</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>Recettes Réelles :</span> <span class="fw-bold text-success">{{ total_revenue }} FCFA</span></div>
+                <div class="small text-muted mt-2">Note: Les clients internes sont exclus des totaux financiers.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau détaillé -->
+    <h5 class="fw-bold mb-3 border-start border-4 border-success ps-3">Détail des opérations</h5>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle" style="font-size: 0.8rem;">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th><th>Client</th><th>Espèce</th><th>Œufs</th><th>Éclos</th><th>Payé</th><th>Reste</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in depots %}
+                <tr>
+                    <td>{{ d.date_depot|date:"d/m/y" }}</td>
+                    <td>{{ d.client.nom }}</td>
+                    <td>{{ d.espece.nom }}</td>
+                    <td>{{ d.quantite }}</td>
+                    <td>{{ d.nombre_eclos|default:"-" }}</td>
+                    <td>{{ d.paiement_solde }}</td>
+                    <td class="{% if d.reste_a_payer > 0 %}text-danger fw-bold{% endif %}">{{ d.reste_a_payer }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-5 pt-4 text-center border-top text-muted x-small">
+        Document généré le {{ aujourd_hui|date:"d/m/Y H:i" }} par KIS Couveuse Apps v1.0.1
+    </div>
+</div>
+
+<style>
+    @media print {
+        .navbar, .bottom-nav, .d-print-none { display: none !important; }
+        body { background: white !important; padding: 0 !important; }
+        .bg-light { background-color: #f8f9fa !important; }
+        .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+    .x-small { font-size: 0.65rem; text-transform: uppercase; }
+</style>
+{% endblock %}

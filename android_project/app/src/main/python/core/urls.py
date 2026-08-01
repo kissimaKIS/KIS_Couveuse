@@ -10,6 +10,7 @@ urlpatterns = [
 
     path("", views.dashboard, name="dashboard"),
     path("stats/", views.stats, name="statistiques"),
+    path("stats/rapport-global/", views.rapport_global, name="rapport_global"),
     path("stats/export/global/", views.export_stats_global_pdf, name="export_stats_global_pdf"),
 
     path("depots/", views.depot_liste, name="depot_liste"),

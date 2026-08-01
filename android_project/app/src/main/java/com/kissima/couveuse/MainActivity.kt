@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Création du canal de notification pour les alertes
+        // Création du canal de notification pour les alertes (IMPORTANT)
         creerCanalNotification()
 
         // Démarre le serveur Django embarqué (mode invisible)
@@ -85,46 +85,36 @@ class MainActivity : AppCompatActivity() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            cacheMode = android.webkit.WebSettings.LOAD_NO_CACHE
+            databaseEnabled = true
+            cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
         }
         
         webView.addJavascriptInterface(WebAppInterface(), "CouveuseApp")
         
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                // On s'assure que le chargement est masqué une fois la page affichée
+                if (url != null && url.contains("8080")) {
+                    loadingLayout.visibility = View.GONE
+                    webView.visibility = View.VISIBLE
+                }
+            }
+
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 if (url == null) return false
                 
-                if (url.startsWith("whatsapp:") || url.contains("wa.me")) {
+                // Gestion des liens spéciaux
+                if (url.startsWith("whatsapp:") || url.contains("wa.me") || url.startsWith("tel:") || url.startsWith("mailto:")) {
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         startActivity(intent)
                         return true
                     } catch (e: Exception) {
-                        Toast.makeText(this@MainActivity, "L'application demandée n'est pas installée", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Impossible d'ouvrir l'application demandée", Toast.LENGTH_SHORT).show()
                         return true
                     }
                 }
-                
-                if (url.startsWith("tel:")) {
-                    try {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse(url))
-                        startActivity(intent)
-                        return true
-                    } catch (e: Exception) {
-                        return false
-                    }
-                }
-
-                if (url.startsWith("mailto:")) {
-                    try {
-                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse(url))
-                        startActivity(intent)
-                        return true
-                    } catch (e: Exception) {
-                        return false
-                    }
-                }
-                
                 return false
             }
         }
@@ -158,15 +148,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun creerCanalNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Alertes Couveuse"
-            val descriptionText = "Notifications pour les mirages et éclosions"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel(CouveuseServerService.CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-            }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+            val channel = NotificationChannel(
+                CouveuseServerService.CHANNEL_ID,
+                "Alertes Couveuse",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply { description = "Notifications de mirage et éclosion" }
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
         }
     }
 
@@ -175,19 +163,17 @@ class MainActivity : AppCompatActivity() {
             val disponible = serveurRepond()
             handler.post {
                 if (disponible) {
-                    loadingLayout.visibility = View.GONE
-                    webView.visibility = View.VISIBLE
                     webView.loadUrl(urlServeur)
-                } else if (tentative < 60) {
-                    statusText.text = "Chargement... ($tentative)"
-                    handler.postDelayed({ attendreServeurPuisCharger(tentative + 1) }, 500) // 500ms au lieu de 1s
+                    // Le masquage du loadingLayout se fait dans onPageFinished
+                } else if (tentative < 100) {
+                    statusText.text = "Initialisation du serveur... ($tentative)"
+                    handler.postDelayed({ attendreServeurPuisCharger(tentative + 1) }, 500)
                 } else {
                     loadingLayout.visibility = View.GONE
                     webView.visibility = View.VISIBLE
                     webView.loadData(
-                        "<html><body><h3 style='color:red;'>Erreur : le serveur local n'a pas pu démarrer.</h3></body></html>",
-                        "text/html",
-                        "utf-8",
+                        "<html><body style='text-align:center;padding:50px;'><h3>Erreur de démarrage</h3><p>Le serveur n'a pas pu s'allumer.</p></body></html>",
+                        "text/html", "utf-8"
                     )
                 }
             }
@@ -197,7 +183,7 @@ class MainActivity : AppCompatActivity() {
     private fun serveurRepond(): Boolean {
         return try {
             val connexion = URL(urlServeur).openConnection() as HttpURLConnection
-            connexion.connectTimeout = 300
+            connexion.connectTimeout = 400
             connexion.requestMethod = "GET"
             val code = connexion.responseCode
             connexion.disconnect()
@@ -224,9 +210,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun telechargerEtPartagerFichier(url: String, contentDisposition: String) {
-        val fileName = contentDisposition.split("filename=").lastOrNull()?.replace("\"", "") ?: "document"
+        val fileName = contentDisposition.split("filename=").lastOrNull()?.replace("\"", "") ?: "document.sqlite3"
         val cookies = CookieManager.getInstance().getCookie(url)
-        val extension = if (fileName.contains(".")) fileName.split(".").last() else ""
+        val extension = if (fileName.contains(".")) fileName.split(".").last() else "sqlite3"
         val mimeType = when(extension) {
             "pdf" -> "application/pdf"
             "sqlite3" -> "application/x-sqlite3"
@@ -237,9 +223,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
-                if (!cookies.isNullOrEmpty()) {
-                    connection.setRequestProperty("Cookie", cookies)
-                }
+                if (!cookies.isNullOrEmpty()) connection.setRequestProperty("Cookie", cookies)
                 connection.connect()
 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
@@ -248,9 +232,7 @@ class MainActivity : AppCompatActivity() {
                     
                     val file = File(folder, fileName)
                     val outputStream = FileOutputStream(file)
-                    connection.inputStream.use { input ->
-                        input.copyTo(outputStream)
-                    }
+                    connection.inputStream.use { input -> input.copyTo(outputStream) }
                     outputStream.close()
 
                     handler.post { partagerFichier(file, mimeType) }
@@ -266,23 +248,22 @@ class MainActivity : AppCompatActivity() {
             val authority = "com.kissima.couveuse.fileprovider"
             val uri = FileProvider.getUriForFile(this, authority, file)
             
-            if (mimeType.contains("pdf")) {
-                val intent = Intent(Intent.ACTION_VIEW).apply {
+            val intent = if (mimeType.contains("pdf")) {
+                Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, mimeType)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                startActivity(intent)
             } else {
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    setDataAndType(uri, mimeType)
+                Intent(Intent.ACTION_SEND).apply {
+                    type = mimeType
                     putExtra(Intent.EXTRA_STREAM, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                startActivity(Intent.createChooser(intent, "Sauvegarder"))
             }
+            startActivity(Intent.createChooser(intent, "Partager le fichier"))
         } catch (e: Exception) {
-            Log.e("MainActivity", "Erreur Fichier", e)
+            Log.e("MainActivity", "Erreur Partage", e)
+            Toast.makeText(this, "Erreur lors du partage", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -292,7 +273,6 @@ class MainActivity : AppCompatActivity() {
         val uri = Uri.parse(currentUrl)
         val path = uri.path ?: ""
         
-        // TOUCHE RETOUR DIRECTE DEPUIS L'ACCUEIL OU DASHBOARD
         if (path == "/" || path == "/dashboard/" || path == "" || !webView.canGoBack()) {
             super.onBackPressed()
             finish()

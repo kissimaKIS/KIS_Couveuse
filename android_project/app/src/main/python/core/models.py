@@ -64,8 +64,9 @@ class Depot(models.Model):
     date_depot = models.DateField(verbose_name="Date de dépôt")
     quantite = models.PositiveIntegerField(verbose_name="Qté")
     resultat_mirage = models.PositiveIntegerField(null=True, blank=True, verbose_name="RAM")
-    date_mirage_effectue = models.DateField(null=True, blank=True)
+    date_mirage_effectue = models.DateField(null=True, blank=True, verbose_name="Date réelle mirage")
     nombre_eclos = models.PositiveIntegerField(null=True, blank=True, verbose_name="Éclos")
+    date_eclosion_effectuee = models.DateField(null=True, blank=True, verbose_name="Date réelle éclosion")
     prix_unitaire_applique = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     acompte = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     remise = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Remise")
@@ -80,10 +81,21 @@ class Depot(models.Model):
         ordering = ["-date_depot"]
 
     def save(self, *args, **kwargs):
+        # Fixation du prix au moment du dépôt
         if not self.prix_unitaire_applique:
             self.prix_unitaire_applique = self.espece.prix_unitaire
-        if self.client.est_interne and not self.acompte:
-            self.acompte = self.montant_total
+
+        # Logique de paiement échelonné : on cumule l'acompte dans le solde payé
+        if self.acompte > 0:
+            self.paiement_solde += self.acompte
+            self.acompte = 0
+
+        # Un client interne solde automatiquement son dépôt
+        if self.client.est_interne:
+            self.paiement_solde = self.montant_total
+            self.acompte = 0
+            self.remise = 0
+
         super().save(*args, **kwargs)
 
     @property

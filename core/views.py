@@ -14,7 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
-from django.db.models import Sum, Count, F
+from django.db.models import Sum, Count, F, Q
 from django.conf import settings
 
 from .forms import (
@@ -156,7 +156,7 @@ def depot_creer(request):
             messages.success(request, get_strings(lang)['success_saved'])
             return redirect("dashboard")
     else:
-        initial = {}
+        initial = {"date_depot": timezone.localdate()}
         if request.GET.get("espece"): initial['espece'] = request.GET.get("espece")
         if request.GET.get("client_id"): initial['client'] = request.GET.get("client_id")
         form = DepotForm(initial=initial, lang=lang)
@@ -354,8 +354,13 @@ def stats(request):
 
     # EXCLUSION DES CLIENTS INTERNES POUR LES STATS FINANCIÈRES
     depots_commerciaux = Depot.objects.filter(client__est_interne=False)
-    total_gains = depots_commerciaux.aggregate(s=Sum(F("acompte") + F("paiement_solde")))["s"] or 0
+    total_gains = depots_commerciaux.aggregate(s=Sum(F("paiement_solde")))["s"] or 0
     ca = sum(d.montant_total - d.remise for d in depots_commerciaux)
+
+    # Calcul des meilleurs clients par gain (Limité à 5)
+    classement = Client.objects.filter(est_interne=False).annotate(
+        gain=Sum('depots__paiement_solde')
+    ).filter(gain__gt=0).order_by('-gain')[:5]
 
     # Calcul des stats par espèces
     data_esp = []
@@ -371,7 +376,7 @@ def stats(request):
     return render(request, "core/stats.html", {
         "taux_global": taux, "total_gains": total_gains, "chiffre_affaire": ca,
         "total_ram": total_ram, "total_eclos": total_eclos,
-        "classement_clients": Client.objects.annotate(total_depose=Count("depots")).order_by("-total_depose")[:10],
+        "classement_clients": classement,
         "data_especes": data_esp, "labels_especes": labels_esp,
         "auto_print": request.GET.get('print') == '1'
     })
@@ -468,7 +473,54 @@ def restaurer_sauvegarde(request, nom):
         messages.success(request, f"Sauvegarde {nom} restaurée. Veuillez relancer l'application.")
     return redirect("liste_sauvegardes")
 
-def exporter_cloud(request): return redirect("liste_sauvegardes")
+@login_required
+def exporter_cloud(request):
+    """Génère un lien de téléchargement vers la base de données actuelle pour partage Android."""
+    source = os.path.join(os.environ.get("COUVEUSE_MOBILE_BASE_DIR", settings.BASE_DIR), "couveuse_mobile.sqlite3")
+    if os.path.exists(source):
+        with open(source, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/x-sqlite3')
+            response['Content-Disposition'] = 'attachment; filename="sauvegarde_couveuse.sqlite3"'
+            return response
+    messages.error(request, "Fichier de base de données introuvable.")
+    return redirect("liste_sauvegardes")
+
+@login_required
+def rapport_global(request):
+    """Page de rapport complet avec filtres et graphiques."""
+    depots = Depot.objects.select_related('client', 'espece').all()
+
+    # Filtres
+    q_client = request.GET.get('client')
+    if q_client: depots = depots.filter(client_id=q_client)
+
+    q_espece = request.GET.get('espece')
+    if q_espece: depots = depots.filter(espece_id=q_espece)
+
+    date_debut = request.GET.get('date_debut')
+    if date_debut: depots = depots.filter(date_depot__gte=date_debut)
+
+    date_fin = request.GET.get('date_fin')
+    if date_fin: depots = depots.filter(date_depot__lte=date_fin)
+
+    # Stats
+    total_oeufs = depots.aggregate(s=Sum('quantite'))['s'] or 0
+    total_eclos = depots.aggregate(s=Sum('nombre_eclos'))['s'] or 0
+    taux = round((total_eclos / total_oeufs * 100), 1) if total_oeufs > 0 else 0
+
+    # Financier (Hors internes)
+    depots_payants = depots.filter(client__est_interne=False)
+    total_revenue = depots_payants.aggregate(s=Sum('paiement_solde'))['s'] or 0
+    total_ca = sum(d.montant_total - d.remise for d in depots_payants)
+
+    context = {
+        "depots": depots, "total_oeufs": total_oeufs, "total_eclos": total_eclos, "taux": taux,
+        "total_revenue": total_revenue, "total_ca": total_ca,
+        "clients": Client.objects.all(), "especes": Espece.objects.filter(actif=True),
+        "auto_print": request.GET.get('print') == '1'
+    }
+    return render(request, "core/rapport_global.html", context)
+
 def client_creer_rapide(request): return redirect("client_creer")
 def creation_compte_admin(request): return redirect("dashboard")
 class ConnexionView(LoginView): template_name = "core/login.html"
