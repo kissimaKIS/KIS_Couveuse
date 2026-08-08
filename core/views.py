@@ -101,8 +101,9 @@ def dashboard(request):
     strings = get_strings(lang)
 
     depots_actifs = Depot.objects.filter(nombre_eclos__isnull=True).select_related('client', 'espece')
-    alertes_mirage = [d for d in depots_actifs if d.alerte_mirage_du_jour]
-    alertes_eclosion = [d for d in depots_actifs if d.alerte_eclosion_proche]
+    # Les alertes ne concernent que les dépôts non encore vérifiés
+    alertes_mirage = [d for d in depots_actifs if d.resultat_mirage is None and d.alerte_mirage_du_jour]
+    alertes_eclosion = [d for d in depots_actifs if d.nombre_eclos is None and d.alerte_eclosion_proche]
 
     especes = Espece.objects.filter(actif=True)
     for e in especes:
@@ -159,9 +160,9 @@ def depot_liste(request):
     if q_filter == "actifs":
         depots = [d for d in depots if d.nombre_eclos is None]
     elif q_filter == "mirage":
-        depots = [d for d in depots if d.alerte_mirage_du_jour]
+        depots = [d for d in depots if d.resultat_mirage is None and d.alerte_mirage_du_jour]
     elif q_filter == "eclosion":
-        depots = [d for d in depots if d.alerte_eclosion_proche]
+        depots = [d for d in depots if d.nombre_eclos is None and d.alerte_eclosion_proche]
 
     for d in depots:
         d.espece.nom_traduit = strings.get(f"sp_{d.espece.nom}", d.espece.nom)
@@ -176,6 +177,24 @@ def depot_liste(request):
         "q_date_fin": q_date_fin,
         "q_filter": q_filter,
     })
+
+@login_required
+def mirage_effectue_liste(request):
+    lang = request.session.get('django_language', 'fr')
+    strings = get_strings(lang)
+    depots = Depot.objects.filter(resultat_mirage__isnull=False).select_related("client", "espece").order_by("-date_mirage_effectue")
+    for d in depots:
+        d.espece.nom_traduit = strings.get(f"sp_{d.espece.nom}", d.espece.nom)
+    return render(request, "core/mirage_effectue_list.html", {"depots": depots})
+
+@login_required
+def eclosion_effectuee_liste(request):
+    lang = request.session.get('django_language', 'fr')
+    strings = get_strings(lang)
+    depots = Depot.objects.filter(nombre_eclos__isnull=False).select_related("client", "espece").order_by("-date_eclosion_effectuee")
+    for d in depots:
+        d.espece.nom_traduit = strings.get(f"sp_{d.espece.nom}", d.espece.nom)
+    return render(request, "core/eclosion_effectuee_list.html", {"depots": depots})
 
 @login_required
 def depot_creer(request):
@@ -259,6 +278,40 @@ def client_modifier(request, pk):
     return render(request, "core/client_form.html", {"form": form, "titre": "Modifier client"})
 
 @login_required
+def client_compte(request, pk):
+    """Gère le compte global d'un client et ses versements par tranche."""
+    client = get_object_or_404(Client, pk=pk)
+    depots = client.depots.all().select_related('espece').order_by("date_depot")
+    lang = request.session.get('django_language', 'fr')
+    strings = get_strings(lang)
+
+    if request.method == "POST":
+        montant_global = float(request.POST.get("montant_global", 0))
+        if montant_global > 0:
+            # On répartit sur les dépôts non soldés (les plus anciens d'abord)
+            for d in depots:
+                reste = d.reste_a_payer
+                if reste > 0:
+                    versement = min(montant_global, reste)
+                    d.paiement_solde += versement
+                    d.save()
+                    montant_global -= versement
+                if montant_global <= 0: break
+            messages.success(request, "Versement global enregistré et réparti.")
+            return redirect("client_compte", pk=pk)
+
+    total_du = sum(d.montant_total - d.remise for d in depots)
+    total_paye = sum(d.paiement_solde for d in depots)
+
+    for d in depots:
+        d.espece.nom_traduit = strings.get(f"sp_{d.espece.nom}", d.espece.nom)
+
+    return render(request, "core/client_compte.html", {
+        "client": client, "depots": depots, "total_du": total_du,
+        "total_paye": total_paye, "reste_global": total_du - total_paye
+    })
+
+@login_required
 def client_bilan(request, pk):
     lang = request.session.get('django_language', 'fr')
     strings = get_strings(lang)
@@ -330,7 +383,7 @@ def export_client_pdf(request, pk):
 
 @login_required
 def export_stats_global_pdf(request):
-    return redirect(reverse("statistiques") + "?print=1")
+    return redirect(reverse("rapport_global") + "?print=1")
 
 # ---------------------------------------------------------------------------
 # Espèces
@@ -519,7 +572,7 @@ def exporter_cloud(request):
 @login_required
 def rapport_global(request):
     """Page de rapport complet avec filtres et graphiques."""
-    depots = Depot.objects.select_related('client', 'espece').all()
+    depots = Depot.objects.select_related('client', 'espece').all().order_by("-date_depot")
 
     # Filtres
     q_client = request.GET.get('client')

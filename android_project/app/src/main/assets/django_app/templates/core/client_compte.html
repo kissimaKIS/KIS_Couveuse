@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block titre %}{{ txt.client_account }} - {{ client.nom }}{% endblock %}
+{% block contenu %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0 fw-bold text-primary"><i class="bi bi-person-vcard me-2"></i>{{ txt.client_account }}</h2>
+    <a href="{% url 'client_liste' %}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-arrow-left"></i></a>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4 mb-4 bg-primary text-white">
+    <div class="card-body p-4 text-center">
+        <h4 class="fw-bold mb-1">{{ client.nom }}</h4>
+        <div class="x-small opacity-75 mb-3"><i class="bi bi-telephone"></i> {{ client.telephone|default:"-" }}</div>
+
+        <div class="row g-2 mt-2">
+            <div class="col-6">
+                <div class="bg-white/10 p-3 rounded-3">
+                    <div class="x-small text-uppercase">{{ txt.total_due }}</div>
+                    <div class="h4 mb-0 fw-bold">{{ total_du }} FCFA</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="bg-white/10 p-3 rounded-3">
+                    <div class="x-small text-uppercase">Total payé</div>
+                    <div class="h4 mb-0 fw-bold text-warning">{{ total_paye }} FCFA</div>
+                </div>
+            </div>
+            <div class="col-12 mt-2">
+                <div class="bg-white/20 p-3 rounded-3 border border-white/30">
+                    <div class="x-small text-uppercase">Reste à payer total</div>
+                    <div class="h3 mb-0 fw-bold">{{ reste_global }} FCFA</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4">
+        <h6 class="fw-bold text-uppercase small text-muted mb-4"><i class="bi bi-cash-stack me-2"></i>{{ txt.global_payment }}</h6>
+        <form method="post" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col">
+                <label class="form-label small fw-bold">Montant du versement</label>
+                <input type="number" name="montant_global" class="form-control" placeholder="Ex: 25000" required>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-success px-4 fw-bold rounded-3 shadow-sm h-100">{{ txt.pay_now }}</button>
+            </div>
+        </form>
+        <small class="text-muted d-block mt-2">Le versement sera automatiquement réparti sur les dépôts les plus anciens.</small>
+    </div>
+</div>
+
+<h5 class="fw-bold mb-3 ms-2">Historique des dépôts</h5>
+<div class="table-responsive shadow-sm rounded-4 overflow-hidden bg-white border">
+<table class="table table-hover align-middle mb-0">
+    <thead class="table-light border-bottom">
+        <tr>
+            <th class="ps-3">{{ txt.date }}</th><th>{{ txt.species }}</th><th>Facturé</th><th>Payé</th><th>{{ txt.remaining }}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for d in depots %}
+        <tr>
+            <td class="ps-3"><small>{{ d.date_depot|date:"d/m/y" }}</small></td>
+            <td><small>{{ d.espece.nom_traduit|default:d.espece.nom }} ({{ d.quantite }})</small></td>
+            <td><small>{{ d.montant_total|add:d.remise|subtract:d.remise }}</small></td>
+            <td class="text-success fw-bold"><small>{{ d.paiement_solde }}</small></td>
+            <td class="{% if d.reste_a_payer > 0 %}text-danger fw-bold{% endif %}"><small>{{ d.reste_a_payer }}</small></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

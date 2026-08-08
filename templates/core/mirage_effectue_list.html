@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titre %}{{ txt.mirage_done }}{% endblock %}
+{% block contenu %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0 fw-bold text-warning"><i class="bi bi-eye-fill me-2"></i>{{ txt.mirage_done }}</h2>
+    <a href="{% url 'depot_liste' %}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-arrow-left"></i></a>
+</div>
+
+<div class="table-responsive shadow-sm rounded-4 overflow-hidden bg-white border">
+<table class="table table-hover align-middle mb-0">
+    <thead class="table-light border-bottom">
+        <tr>
+            <th class="ps-3">{{ txt.clients }}</th><th>{{ txt.date_depot }}</th><th>{{ txt.date_mirage_done }}</th><th>{{ txt.remaining }}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for d in depots %}
+        <tr>
+            <td class="ps-3">
+                <div class="fw-bold">{{ d.client.nom }}</div>
+                <div class="x-small text-muted">{{ d.espece.nom_traduit|default:d.espece.nom }}</div>
+            </td>
+            <td><small>{{ d.date_depot|date:"d/m/Y" }}</small></td>
+            <td><small class="fw-bold text-warning">{{ d.date_mirage_effectue|date:"d/m/Y"|default:"-" }}</small></td>
+            <td><span class="badge bg-warning text-dark">{{ d.resultat_mirage }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center py-5 text-muted border-0">{{ txt.no_data }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

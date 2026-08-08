@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Création du canal de notification pour les alertes (IMPORTANT)
+        // Création du canal de notification pour les alertes
         creerCanalNotification()
 
         // Démarre le serveur Django embarqué (mode invisible)
@@ -94,7 +94,6 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                // On s'assure que le chargement est masqué une fois la page affichée
                 if (url != null && url.contains("8080")) {
                     loadingLayout.visibility = View.GONE
                     webView.visibility = View.VISIBLE
@@ -104,7 +103,6 @@ class MainActivity : AppCompatActivity() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 if (url == null) return false
                 
-                // Gestion des liens spéciaux
                 if (url.startsWith("whatsapp:") || url.contains("wa.me") || url.startsWith("tel:") || url.startsWith("mailto:")) {
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -151,10 +149,19 @@ class MainActivity : AppCompatActivity() {
             val channel = NotificationChannel(
                 CouveuseServerService.CHANNEL_ID,
                 "Alertes Couveuse",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             ).apply { description = "Notifications de mirage et éclosion" }
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // Si l'activité est déjà ouverte, on recharge l'URL de base si besoin
+        if (serveurRepond()) {
+            webView.loadUrl(urlServeur)
         }
     }
 
@@ -164,8 +171,7 @@ class MainActivity : AppCompatActivity() {
             handler.post {
                 if (disponible) {
                     webView.loadUrl(urlServeur)
-                    // Le masquage du loadingLayout se fait dans onPageFinished
-                } else if (tentative < 100) {
+                } else if (tentative < 120) {
                     statusText.text = "Initialisation du serveur... ($tentative)"
                     handler.postDelayed({ attendreServeurPuisCharger(tentative + 1) }, 500)
                 } else {
@@ -183,7 +189,7 @@ class MainActivity : AppCompatActivity() {
     private fun serveurRepond(): Boolean {
         return try {
             val connexion = URL(urlServeur).openConnection() as HttpURLConnection
-            connexion.connectTimeout = 400
+            connexion.connectTimeout = 500
             connexion.requestMethod = "GET"
             val code = connexion.responseCode
             connexion.disconnect()
@@ -210,7 +216,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun telechargerEtPartagerFichier(url: String, contentDisposition: String) {
-        val fileName = contentDisposition.split("filename=").lastOrNull()?.replace("\"", "") ?: "document.sqlite3"
+        val fileName = contentDisposition.split("filename=").lastOrNull()?.replace("\"", "") ?: "sauvegarde.sqlite3"
         val cookies = CookieManager.getInstance().getCookie(url)
         val extension = if (fileName.contains(".")) fileName.split(".").last() else "sqlite3"
         val mimeType = when(extension) {

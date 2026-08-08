@@ -85,9 +85,15 @@ class Depot(models.Model):
         if not self.prix_unitaire_applique:
             self.prix_unitaire_applique = self.espece.prix_unitaire
 
-        # Logique de paiement échelonné : on cumule l'acompte dans le solde payé
+        # Logique de paiement échelonné
         if self.acompte > 0:
-            self.paiement_solde += self.acompte
+            montant_net = self.montant_total - self.remise
+            # On empêche de payer plus que le total dû
+            disponible_a_payer = montant_net - self.paiement_solde
+            versement_effectif = min(self.acompte, disponible_a_payer)
+
+            if versement_effectif > 0:
+                self.paiement_solde += versement_effectif
             self.acompte = 0
 
         # Un client interne solde automatiquement son dépôt

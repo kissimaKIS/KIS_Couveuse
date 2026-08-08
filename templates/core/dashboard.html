@@ -28,7 +28,7 @@
     <div class="col-4">
         <a href="{% url 'depot_liste' %}?filter=actifs" class="text-decoration-none">
             <div class="card text-bg-success shadow-sm h-100">
-                <div class="card-body text-center">
+                <div class="card-body text-center p-2">
                     <h6 class="card-title x-small mb-1">{{ txt.deposits }}</h6>
                     <p class="h4 mb-0 fw-bold">{{ total_depots_actifs }}</p>
                 </div>
@@ -38,7 +38,7 @@
     <div class="col-4">
         <a href="{% url 'depot_liste' %}?filter=mirage" class="text-decoration-none">
             <div class="card text-bg-warning shadow-sm h-100 border-0">
-                <div class="card-body text-center text-dark">
+                <div class="card-body text-center text-dark p-2">
                     <h6 class="card-title x-small mb-1">{{ txt.mirages }}</h6>
                     <p class="h4 mb-0 fw-bold">{{ alertes_mirage_count }}</p>
                 </div>
@@ -48,11 +48,24 @@
     <div class="col-4">
         <a href="{% url 'depot_liste' %}?filter=eclosion" class="text-decoration-none">
             <div class="card text-bg-danger shadow-sm h-100 border-0">
-                <div class="card-body text-center">
+                <div class="card-body text-center p-2">
                     <h6 class="card-title x-small mb-1">{{ txt.hatchings }}</h6>
                     <p class="h4 mb-0 fw-bold">{{ alertes_eclosion_count }}</p>
                 </div>
             </div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-2 mb-4">
+    <div class="col-6">
+        <a href="{% url 'mirage_effectue_liste' %}" class="btn btn-outline-warning w-100 py-2 rounded-3 small fw-bold">
+            <i class="bi bi-eye-fill"></i> {{ txt.mirage_done }}
+        </a>
+    </div>
+    <div class="col-6">
+        <a href="{% url 'eclosion_effectuee_liste' %}" class="btn btn-outline-danger w-100 py-2 rounded-3 small fw-bold">
+            <i class="bi bi-egg-fill"></i> {{ txt.hatch_done }}
         </a>
     </div>
 </div>
