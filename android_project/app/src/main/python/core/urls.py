@@ -24,8 +24,12 @@ urlpatterns = [
     path("clients/nouveau/rapide/", views.client_creer_rapide, name="client_creer_rapide"),
     path("clients/<int:pk>/modifier/", views.client_modifier, name="client_modifier"),
     path("clients/<int:pk>/bilan/", views.client_bilan, name="client_bilan"),
+    path("clients/<int:pk>/compte/", views.client_compte, name="client_compte"),
     path("clients/<int:pk>/whatsapp/", views.whatsapp_situation, name="whatsapp_situation"),
     path("clients/<int:pk>/export/pdf/", views.export_client_pdf, name="export_client_pdf"),
+
+    path("suivi/mirage-effectue/", views.mirage_effectue_liste, name="mirage_effectue_liste"),
+    path("suivi/eclosion-effectuee/", views.eclosion_effectuee_liste, name="eclosion_effectuee_liste"),
 
     path("especes/", views.espece_list, name="espece_liste"),
     path("especes/nouvelle/", views.espece_form, name="espece_creer"),

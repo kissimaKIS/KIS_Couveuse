@@ -169,11 +169,13 @@ class MainActivity : AppCompatActivity() {
     private fun serveurRepond(): Boolean {
         return try {
             val connexion = URL(urlServeur).openConnection() as HttpURLConnection
-            connexion.connectTimeout = 600
+            connexion.connectTimeout = 1000
             connexion.requestMethod = "GET"
             val code = connexion.responseCode
             connexion.disconnect()
-            (code in 200..499)
+            // On accepte les codes 200-599 pour considérer que le serveur est "allumé"
+            // même s'il y a une erreur interne Django (500)
+            (code in 200..599)
         } catch (_: IOException) { false }
     }
 
