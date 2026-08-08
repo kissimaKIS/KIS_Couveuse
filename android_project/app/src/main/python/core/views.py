@@ -16,6 +16,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 from django.db.models import Sum, Count, F, Q
 from django.conf import settings
+from decimal import Decimal
 
 from .forms import (
     CreationCompteAdminForm, ActivationLicenceForm, DemandeActivationForm,
@@ -281,12 +282,22 @@ def client_modifier(request, pk):
 def client_compte(request, pk):
     """Gère le compte global d'un client et ses versements par tranche."""
     client = get_object_or_404(Client, pk=pk)
+
+    # Sécurité : Pas de compte pour les clients internes
+    if client.est_interne:
+        messages.warning(request, "Les clients internes n'ont pas de compte financier.")
+        return redirect("client_liste")
+
     depots = client.depots.all().select_related('espece').order_by("date_depot")
     lang = request.session.get('django_language', 'fr')
     strings = get_strings(lang)
 
     if request.method == "POST":
-        montant_global = float(request.POST.get("montant_global", 0))
+        try:
+            montant_global = Decimal(request.POST.get("montant_global", "0"))
+        except:
+            montant_global = Decimal("0")
+
         if montant_global > 0:
             # On répartit sur les dépôts non soldés (les plus anciens d'abord)
             for d in depots:

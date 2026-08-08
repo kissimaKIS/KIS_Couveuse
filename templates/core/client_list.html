@@ -22,12 +22,14 @@
                 <td><small>{{ c.telephone }}</small></td>
                 <td class="pe-3">
                     <div class="d-flex justify-content-end gap-2 align-items-center">
+                        {% if not c.est_interne %}
                         <a href="{% url 'client_compte' c.pk %}" class="btn btn-outline-primary btn-sm rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px; border-width: 2px;" title="Compte">
                              <i class="bi bi-person-vcard"></i>
                         </a>
                         <a href="{% url 'client_bilan' c.pk %}" class="btn btn-primary btn-sm rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px;" title="Bilan">
                              <i class="bi bi-file-earmark-pdf"></i>
                         </a>
+                        {% endif %}
                         <div class="d-flex gap-1 ms-1">
                             {% if c.telephone %}
                             <a href="{% url 'whatsapp_situation' c.pk %}" class="btn btn-sm btn-outline-success rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;"><i class="bi bi-whatsapp"></i></a>
