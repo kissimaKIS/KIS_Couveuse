@@ -62,9 +62,9 @@
     <tbody>
         {% for d in depots %}
         <tr>
-            <td class="ps-3"><small>{{ d.date_depot|date:"d/m/y" }}</small></td>
+            <td><small>{{ d.date_depot|date:"d/m/y" }}</small></td>
             <td><small>{{ d.espece.nom_traduit|default:d.espece.nom }} ({{ d.quantite }})</small></td>
-            <td><small>{{ d.montant_total|add:d.remise|subtract:d.remise }}</small></td>
+            <td><small>{{ d.montant_total }}</small></td>
             <td class="text-success fw-bold"><small>{{ d.paiement_solde }}</small></td>
             <td class="{% if d.reste_a_payer > 0 %}text-danger fw-bold{% endif %}"><small>{{ d.reste_a_payer }}</small></td>
         </tr>

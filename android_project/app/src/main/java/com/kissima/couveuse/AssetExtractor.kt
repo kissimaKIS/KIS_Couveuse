@@ -14,37 +14,47 @@ object AssetExtractor {
     @Synchronized
     fun extraireSiNecessaire(context: Context): String {
         val destination = File(context.filesDir, "django_app")
-        val marqueur = File(destination, ".extrait_ok_v61") // Version 61: URL fix for technical lists
+        val marqueur = File(destination, ".extrait_ok_v62") // Version 62: Logo preservation fix & UI polish
 
         try {
             if (!marqueur.exists()) {
-                Log.i("AssetExtractor", "Mise à jour majeure v1.1.2 (v60)...")
+                Log.i("AssetExtractor", "Mise à jour majeure v1.1.2 (v62)...")
                 
                 // Sauvegarde de la base de données
                 val dbFile = File(destination, "couveuse_mobile.sqlite3")
                 val tempDb = File(context.cacheDir, "temp_db.sqlite3")
                 if (dbFile.exists()) {
                     dbFile.copyTo(tempDb, overwrite = true)
-                    Log.i("AssetExtractor", "Base de données sauvegardée.")
                 }
 
-                // Nettoyage complet pour assurer la mise à jour des templates/logic
+                // Sauvegarde du dossier media (logo, photos)
+                val mediaDir = File(destination, "media")
+                val tempMedia = File(context.cacheDir, "temp_media")
+                if (mediaDir.exists()) {
+                    mediaDir.copyRecursively(tempMedia, overwrite = true)
+                }
+
+                // Nettoyage complet
                 destination.deleteRecursively()
                 destination.mkdirs()
 
-                // Extraction des fichiers
+                // Extraction des nouveaux fichiers
                 copierDossierAssets(context, "django_app", destination)
 
-                // Restauration de la base de données
+                // Restauration base de données
                 if (tempDb.exists()) {
-                    val newDbFile = File(destination, "couveuse_mobile.sqlite3")
-                    tempDb.copyTo(newDbFile, overwrite = true)
+                    tempDb.copyTo(File(destination, "couveuse_mobile.sqlite3"), overwrite = true)
                     tempDb.delete()
-                    Log.i("AssetExtractor", "Base de données restaurée.")
+                }
+
+                // Restauration dossier media
+                if (tempMedia.exists()) {
+                    tempMedia.copyRecursively(File(destination, "media"), overwrite = true)
+                    tempMedia.deleteRecursively()
                 }
 
                 marqueur.createNewFile()
-                Log.i("AssetExtractor", "Mise à jour v60 terminée.")
+                Log.i("AssetExtractor", "Mise à jour v62 terminée.")
             }
         } catch (e: Exception) {
             Log.e("AssetExtractor", "Erreur critique extraction : ${e.message}", e)
