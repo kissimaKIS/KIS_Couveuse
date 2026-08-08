@@ -3,7 +3,6 @@ package com.kissima.couveuse
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -42,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private val urlServeur = "http://127.0.0.1:8080"
     private val handler = Handler(Looper.getMainLooper())
+    private var serveurPret = false
 
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -58,10 +58,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Création du canal de notification pour les alertes
+        // Initialisation canal notification
         creerCanalNotification()
 
-        // Démarre le serveur Django embarqué (mode invisible)
+        // Lancement serveur invisible
         startService(Intent(this, CouveuseServerService::class.java))
 
         setContentView(R.layout.activity_main)
@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
         loadingLayout = findViewById(R.id.loadingLayout)
         statusText = findViewById(R.id.statusText)
 
-        // Demande la permission de notification
+        // Permission notification
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
         }
@@ -102,14 +102,13 @@ class MainActivity : AppCompatActivity() {
 
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 if (url == null) return false
-                
                 if (url.startsWith("whatsapp:") || url.contains("wa.me") || url.startsWith("tel:") || url.startsWith("mailto:")) {
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         startActivity(intent)
                         return true
                     } catch (e: Exception) {
-                        Toast.makeText(this@MainActivity, "Impossible d'ouvrir l'application demandée", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Application non installée", Toast.LENGTH_SHORT).show()
                         return true
                     }
                 }
@@ -118,25 +117,14 @@ class MainActivity : AppCompatActivity() {
         }
         
         webView.setDownloadListener { url, _, contentDisposition, _, _ ->
-            Toast.makeText(this, "Préparation du fichier...", Toast.LENGTH_SHORT).show()
             telechargerEtPartagerFichier(url, contentDisposition)
         }
         
         webView.webChromeClient = object : WebChromeClient() {
-            override fun onShowFileChooser(
-                webView: WebView?,
-                callback: ValueCallback<Array<Uri>>?,
-                params: FileChooserParams?
-            ): Boolean {
+            override fun onShowFileChooser(webView: WebView?, callback: ValueCallback<Array<Uri>>?, params: FileChooserParams?): Boolean {
                 filePathCallback?.onReceiveValue(null)
                 filePathCallback = callback
-                val intent = params?.createIntent()
-                try {
-                    filePickerLauncher.launch(intent)
-                } catch (e: Exception) {
-                    filePathCallback = null
-                    return false
-                }
+                try { filePickerLauncher.launch(params?.createIntent()) } catch (e: Exception) { filePathCallback = null; return false }
                 return true
             }
         }
@@ -146,11 +134,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun creerCanalNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CouveuseServerService.CHANNEL_ID,
-                "Alertes Couveuse",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply { description = "Notifications de mirage et éclosion" }
+            val name = "Alertes Couveuse"
+            val channel = NotificationChannel(CouveuseServerService.CHANNEL_ID, name, NotificationManager.IMPORTANCE_HIGH)
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
@@ -159,10 +144,7 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        // Si l'activité est déjà ouverte, on recharge l'URL de base si besoin
-        if (serveurRepond()) {
-            webView.loadUrl(urlServeur)
-        }
+        if (serveurPret) webView.loadUrl(urlServeur)
     }
 
     private fun attendreServeurPuisCharger(tentative: Int) {
@@ -170,17 +152,15 @@ class MainActivity : AppCompatActivity() {
             val disponible = serveurRepond()
             handler.post {
                 if (disponible) {
+                    serveurPret = true
                     webView.loadUrl(urlServeur)
-                } else if (tentative < 120) {
-                    statusText.text = "Initialisation du serveur... ($tentative)"
-                    handler.postDelayed({ attendreServeurPuisCharger(tentative + 1) }, 500)
+                } else if (tentative < 150) {
+                    statusText.text = "Démarrage du système... ($tentative)"
+                    handler.postDelayed({ attendreServeurPuisCharger(tentative + 1) }, 600)
                 } else {
                     loadingLayout.visibility = View.GONE
                     webView.visibility = View.VISIBLE
-                    webView.loadData(
-                        "<html><body style='text-align:center;padding:50px;'><h3>Erreur de démarrage</h3><p>Le serveur n'a pas pu s'allumer.</p></body></html>",
-                        "text/html", "utf-8"
-                    )
+                    webView.loadData("<html><body style='text-align:center;padding:50px;'><h3>Erreur de démarrage</h3><p>Veuillez relancer l'application.</p></body></html>", "text/html", "utf-8")
                 }
             }
         }.start()
@@ -189,14 +169,12 @@ class MainActivity : AppCompatActivity() {
     private fun serveurRepond(): Boolean {
         return try {
             val connexion = URL(urlServeur).openConnection() as HttpURLConnection
-            connexion.connectTimeout = 500
+            connexion.connectTimeout = 600
             connexion.requestMethod = "GET"
             val code = connexion.responseCode
             connexion.disconnect()
             (code in 200..499)
-        } catch (_: IOException) {
-            false
-        }
+        } catch (_: IOException) { false }
     }
 
     inner class WebAppInterface {
@@ -205,12 +183,9 @@ class MainActivity : AppCompatActivity() {
             handler.post {
                 try {
                     val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
-                    val jobName = "${getString(R.string.app_name)} Document"
-                    val printAdapter = webView.createPrintDocumentAdapter(jobName)
-                    printManager.print(jobName, printAdapter, PrintAttributes.Builder().build())
-                } catch (e: Exception) {
-                    Log.e("MainActivity", "Erreur Impression", e)
-                }
+                    val printAdapter = webView.createPrintDocumentAdapter("Document KIS")
+                    printManager.print("Imprimer", printAdapter, PrintAttributes.Builder().build())
+                } catch (e: Exception) { Log.e("MainActivity", "Erreur Impression", e) }
             }
         }
     }
@@ -218,73 +193,39 @@ class MainActivity : AppCompatActivity() {
     private fun telechargerEtPartagerFichier(url: String, contentDisposition: String) {
         val fileName = contentDisposition.split("filename=").lastOrNull()?.replace("\"", "") ?: "sauvegarde.sqlite3"
         val cookies = CookieManager.getInstance().getCookie(url)
-        val extension = if (fileName.contains(".")) fileName.split(".").last() else "sqlite3"
-        val mimeType = when(extension) {
-            "pdf" -> "application/pdf"
-            "sqlite3" -> "application/x-sqlite3"
-            else -> "application/octet-stream"
-        }
-
         Thread {
             try {
                 val connection = URL(url).openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
                 if (!cookies.isNullOrEmpty()) connection.setRequestProperty("Cookie", cookies)
                 connection.connect()
-
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val folder = File(externalCacheDir, "exports")
-                    if (!folder.exists()) folder.mkdirs()
-                    
+                    val folder = File(externalCacheDir, "exports").apply { if (!exists()) mkdirs() }
                     val file = File(folder, fileName)
-                    val outputStream = FileOutputStream(file)
-                    connection.inputStream.use { input -> input.copyTo(outputStream) }
-                    outputStream.close()
-
-                    handler.post { partagerFichier(file, mimeType) }
+                    FileOutputStream(file).use { connection.inputStream.copyTo(it) }
+                    handler.post { partagerFichier(file) }
                 }
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Erreur Téléchargement", e)
-            }
+            } catch (e: Exception) { Log.e("MainActivity", "Erreur Téléchargement", e) }
         }.start()
     }
 
-    private fun partagerFichier(file: File, mimeType: String) {
+    private fun partagerFichier(file: File) {
         try {
-            val authority = "com.kissima.couveuse.fileprovider"
-            val uri = FileProvider.getUriForFile(this, authority, file)
-            
-            val intent = if (mimeType.contains("pdf")) {
-                Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, mimeType)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-            } else {
-                Intent(Intent.ACTION_SEND).apply {
-                    type = mimeType
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
+            val uri = FileProvider.getUriForFile(this, "com.kissima.couveuse.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = if (file.name.endsWith(".pdf")) "application/pdf" else "application/octet-stream"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             startActivity(Intent.createChooser(intent, "Partager le fichier"))
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Erreur Partage", e)
-            Toast.makeText(this, "Erreur lors du partage", Toast.LENGTH_SHORT).show()
-        }
+        } catch (e: Exception) { Log.e("MainActivity", "Erreur Partage", e) }
     }
 
-    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        val currentUrl = webView.url ?: ""
-        val uri = Uri.parse(currentUrl)
-        val path = uri.path ?: ""
-        
+        val path = Uri.parse(webView.url ?: "").path ?: ""
         if (path == "/" || path == "/dashboard/" || path == "" || !webView.canGoBack()) {
             super.onBackPressed()
             finish()
-        } else {
-            webView.goBack()
-        }
+        } else { webView.goBack() }
     }
 
     override fun onDestroy() {

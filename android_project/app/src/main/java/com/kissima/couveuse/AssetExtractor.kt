@@ -14,39 +14,40 @@ object AssetExtractor {
     @Synchronized
     fun extraireSiNecessaire(context: Context): String {
         val destination = File(context.filesDir, "django_app")
-        val marqueur = File(destination, ".extrait_ok_v55") // Version 55: v1.1.2 - Client accounts and technical lists
+        val marqueur = File(destination, ".extrait_ok_v60") // Version 60: Release 1.1.2 Final
 
         try {
             if (!marqueur.exists()) {
-                Log.i("AssetExtractor", "Mise à jour v1.0.1 (v50)...")
+                Log.i("AssetExtractor", "Mise à jour majeure v1.1.2 (v60)...")
                 
-                // On préserve la base de données sqlite précieuse
+                // Sauvegarde de la base de données
                 val dbFile = File(destination, "couveuse_mobile.sqlite3")
                 val tempDb = File(context.cacheDir, "temp_db.sqlite3")
                 if (dbFile.exists()) {
                     dbFile.copyTo(tempDb, overwrite = true)
-                    Log.i("AssetExtractor", "Base de données sauvegardée temporairement.")
+                    Log.i("AssetExtractor", "Base de données sauvegardée.")
                 }
 
-                // On nettoie tout le dossier pour installer la nouvelle version proprement
+                // Nettoyage complet pour assurer la mise à jour des templates/logic
                 destination.deleteRecursively()
                 destination.mkdirs()
 
-                // On extrait les nouveaux fichiers (Templates, Logic, CSS)
+                // Extraction des fichiers
                 copierDossierAssets(context, "django_app", destination)
 
-                // On restaure la base de données après nettoyage
+                // Restauration de la base de données
                 if (tempDb.exists()) {
-                    tempDb.copyTo(dbFile, overwrite = true)
+                    val newDbFile = File(destination, "couveuse_mobile.sqlite3")
+                    tempDb.copyTo(newDbFile, overwrite = true)
                     tempDb.delete()
-                    Log.i("AssetExtractor", "Base de données restaurée avec succès.")
+                    Log.i("AssetExtractor", "Base de données restaurée.")
                 }
 
                 marqueur.createNewFile()
-                Log.i("AssetExtractor", "Mise à jour v50 terminée.")
+                Log.i("AssetExtractor", "Mise à jour v60 terminée.")
             }
         } catch (e: Exception) {
-            Log.e("AssetExtractor", "Erreur critique lors de l'extraction : ${e.message}", e)
+            Log.e("AssetExtractor", "Erreur critique extraction : ${e.message}", e)
         }
         return destination.absolutePath
     }
@@ -54,7 +55,6 @@ object AssetExtractor {
     private fun copierDossierAssets(context: Context, cheminAssets: String, dossierDestination: File) {
         val elements = context.assets.list(cheminAssets) ?: return
         if (elements.isEmpty()) {
-            // C'est un fichier
             copierFichier(context, cheminAssets, dossierDestination)
             return
         }
@@ -64,7 +64,6 @@ object AssetExtractor {
             val cheminEnfant = "$cheminAssets/$nom"
             val destinationEnfant = File(dossierDestination, nom)
             
-            // On vérifie si c'est un sous-dossier en essayant de lister son contenu
             val sousElements = context.assets.list(cheminEnfant)
             if (!sousElements.isNullOrEmpty()) {
                 copierDossierAssets(context, cheminEnfant, destinationEnfant)
@@ -81,8 +80,7 @@ object AssetExtractor {
                 destination.outputStream().use { sortie -> entree.copyTo(sortie) }
             }
         } catch (e: Exception) {
-            // Parfois list() renvoie des dossiers vides comme des fichiers, on ignore l'erreur
-            Log.w("AssetExtractor", "Note: $cheminAssets n'est pas un fichier copiable (${e.message})")
+            Log.w("AssetExtractor", "Note: $cheminAssets non copiable (${e.message})")
         }
     }
 }
